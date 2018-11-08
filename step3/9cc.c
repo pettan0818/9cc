@@ -7,7 +7,7 @@
 enum {
     TK_NUM = 256, // INT token
     TK_EOF,  // End Of File(Input) token
-}
+};
 
 // token types
 typedef struct {
@@ -18,7 +18,7 @@ typedef struct {
 
 // tokenized result should be saved to this array.
 // We conveive num of tokens are below 100.
-Token tokens[100] // 構造体100個
+Token tokens[100]; // 構造体100個
 
 // chars which are contained at *p will be divided and saved in tokens.
 void tokenize(char *p) {
@@ -86,7 +86,7 @@ int main(int argc, char **argv) {
     while (tokens[i].ty != TK_EOF) {
         if (tokens[i].ty == '+') {
             i++;  // go to next token.
-            if (token[i].ty != TK_NUM) { // next token if + is recognized.
+            if (tokens[i].ty != TK_NUM) { // next token if + is recognized.
                 error(i);
             }
             printf("  add rax, %d\n", tokens[i].val);
@@ -96,7 +96,7 @@ int main(int argc, char **argv) {
 
         if (tokens[i].ty == '-') {
             i++;  // go to next token.
-            if (token[i].ty != TK_NUM) { // next token if - is recognized.
+            if (tokens[i].ty != TK_NUM) { // next token if - is recognized.
                 error(i);
             }
             printf("  sub rax, %d\n", tokens[i].val);
