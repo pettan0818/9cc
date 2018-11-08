@@ -43,7 +43,6 @@ void tokenize(char *p) {
             tokens[i].input = p;
             tokens[i].val = strtol(p, &p, 10);
             i++;
-            // p++;
             continue;
         }
 
