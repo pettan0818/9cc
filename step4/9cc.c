@@ -68,44 +68,19 @@ int main(int argc, char **argv) {
 
     // do tokenize.
     tokenize(argv[1]);
+    Node* node = expr();
 
     // Output former half of assembly.
     printf(".intel_syntax noprefix\n");
     printf(".global main\n");
     printf("main:\n");
 
-    // The first part of formula must be number and if it is OK -> output first mov order.
-    if (tokens[0].ty != TK_NUM) {
-        error(0); // guard
-    }
-    printf("  mov rax, %d\n", tokens[0].val);
+    // By following AST, generate codes.
+    gen(node);
 
-    // '+ <number>' or '- <number>' consumed and then put assembly.
-    int i = 1;
-    while (tokens[i].ty != TK_EOF) {
-        if (tokens[i].ty == '+') {
-            i++;  // go to next token.
-            if (tokens[i].ty != TK_NUM) { // next token if + is recognized.
-                error(i);
-            }
-            printf("  add rax, %d\n", tokens[i].val);
-            i++;
-            continue;
-        }  // next tokens.
-
-        if (tokens[i].ty == '-') {
-            i++;  // go to next token.
-            if (tokens[i].ty != TK_NUM) { // next token if - is recognized.
-                error(i);
-            }
-            printf("  sub rax, %d\n", tokens[i].val);
-            i++;
-            continue;
-        }  // next tokens.
-
-        error(i);
-    }
-
+    // Because we use stack machine, the result of exed formula should remain the top of the stack.
+    // Load this value to RAX, and then make it the return value of func.
+    printf("  pop rax\n");
     printf("  ret\n");
     return 0;
 }
