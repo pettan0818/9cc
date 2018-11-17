@@ -30,6 +30,11 @@ typedef struct Node {
     int val;  // contains value of number.
 } Node;
 
+// Prototype
+Node *term();
+Node *mul();
+Node *expr();
+
 // tokenized result should be saved to this array.
 // We conveive num of tokens are below 100.
 Token tokens[100];
@@ -54,6 +59,68 @@ Node *new_node_num(int val) {  // the lowest node of AST
     node->ty = ND_NUM;  // type is num that is defined above.
     node->val = val;
     return node;
+}
+
+
+
+// chars which are contained at *p will be divided and saved in tokens.
+void tokenize(char *p) {
+    int i = 0; // counter for tokens num.
+    while (*p) {
+        // Skip the blank chars.
+        if (isspace(*p)) {
+            p++;  // address of *p is increased by 1.
+            continue;
+        }
+
+        if (*p == '+' || *p == '-') {
+            tokens[i].ty = *p;  // implies +- will be type.
+            tokens[i].input = p;
+            i++;
+            p++;
+            continue;
+        }
+
+        if (isdigit(*p)) {
+            tokens[i].ty = TK_NUM;
+            tokens[i].input = p;
+            tokens[i].val = strtol(p, &p, 10);
+            i++;
+            continue;
+        }
+
+        fprintf(stderr, "Unable to toknize: %s\n", p);
+        exit(1);
+    }
+
+    tokens[i].ty = TK_EOF;
+    tokens[i].input = p;
+}
+
+// Error Reporter.
+void error(char *body, char *parameter) {
+    fprintf(stderr, body, parameter);
+    exit(1);
+}
+
+// load term. term is defined below.
+// term: number | "(" expr ")"
+// This rule can be converted like below. And we use [None] as nothing.
+// term: number | (expr')
+Node *term() {
+    if (tokens[pos].ty == TK_NUM) {
+        return new_node_num(tokens[pos++].val);
+    }
+    if (tokens[pos].ty == '(') {
+        pos++;
+        Node *node = expr(); // inside () parsed again as expr
+        if (tokens[pos].ty != ')'){  // if tokens don't include ')', raise error.
+            error("[Fatal] couldn't parse ')': %s", tokens[pos].input);
+        }
+        pos++;
+        return node;
+    }
+    error("[Fatal] illegal<not number of not terms> input found.: %s", tokens[pos].input);
 }
 
 // load mul. mul is defined below.
@@ -96,45 +163,32 @@ Node *expr() {
     return lhs;
 }
 
-
-// chars which are contained at *p will be divided and saved in tokens.
-void tokenize(char *p) {
-    int i = 0; // counter for tokens num.
-    while (*p) {
-        // Skip the blank chars.
-        if (isspace(*p)) {
-            p++;  // address of *p is increased by 1.
-            continue;
-        }
-
-        if (*p == '+' || *p == '-') {
-            tokens[i].ty = *p;  // implies +- will be type.
-            tokens[i].input = p;
-            i++;
-            p++;
-            continue;
-        }
-
-        if (isdigit(*p)) {
-            tokens[i].ty = TK_NUM;
-            tokens[i].input = p;
-            tokens[i].val = strtol(p, &p, 10);
-            i++;
-            continue;
-        }
-
-        fprintf(stderr, "Unable to toknize: %s\n", p);
-        exit(1);
+void gen(Node *node) {
+    if (node->ty == ND_NUM) {
+        printf("  push %d\n", node->val);
+        return;
     }
+    gen(node->lhs);
+    gen(node->rhs);
 
-    tokens[i].ty = TK_EOF;
-    tokens[i].input = p;
-}
+    printf("  pop rdi\n");
+    printf("  pop rax\n");
 
-// Error Reporter.
-void error(int i) {
-    fprintf(stderr, "Unexpected token: %s\n", tokens[i].input);
-    exit(1);
+    switch (node->ty){
+        case '+':
+            printf("  add rax, rdi\n");
+            break;
+        case '-':
+            printf("  sub rax, rdi\n");
+            break;
+        case '*':
+            printf("  mul rdi\n");
+            break;
+        case '/':
+            printf("  mov rdx, 0\n");
+            printf("  div rdi\n");
+    }
+    printf("  push rax\n");
 }
 
 int main(int argc, char **argv) {
