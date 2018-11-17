@@ -1,8 +1,8 @@
-FROM ubuntu:18.04
+FROM alpine:3.6
 
-RUN apt-get update
+RUN apk update
+RUN apk add zsh vim git grep less
 
-CMD mkdir -p /root/files
+RUN mkdir -p /root/files
 
-ADD ./files /root/files
-
+RUN git clone http://github.com/pettan0818/9cc
