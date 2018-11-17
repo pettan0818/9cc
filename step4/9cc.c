@@ -6,15 +6,46 @@
 // Set property for token types.
 enum {
     TK_NUM = 256, // INT token
-    TK_EOF,  // End Of File(Input) token
 };
 
 // token types
 typedef struct {
     int ty; // token type(maybe contains TK_NUM or TK_EOF.)
     int val; // if ty is TK_NUM then that int.
-    char *input; // tokenize string (for error message.)
 } Token;
+
+// Node type.
+// Node has type(includes operator or num) and left hand side / right hand side and value.
+typedef struct Node {
+    int ty;  // operator or number(ND_NUM).
+    struct Node *lhs;  // left-hand side
+    struct Node *rhs;  // right-hand side.
+    int val;  // contains value of number.
+} Node;
+
+// Make new node. (operator)
+// initialize node struct.
+// 1. Allocate memory.
+// 2. bind pointer to member vals.
+Node *new_node(int op, Node *lhs, Node *rhs) {  // return value is pointer, so Node *<func name> is declared here.
+    Node *node = malloc(sizeof(Node));
+    // use arrow operator(->), when you want to access a member variable of pointer.
+    node->ty = op;
+    node->lhs = lhs;
+    node->rhs = rhs;
+
+    return node;
+}
+
+// Make new node contained number.
+Node *new_node_num(int val) {
+    Node *node = malloc(sizeof(Node));
+    node->ty = ND_NUM;
+    node->val = val;
+    return node;
+}
+
+
 
 // tokenized result should be saved to this array.
 // We conveive num of tokens are below 100.
