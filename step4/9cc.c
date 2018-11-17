@@ -31,9 +31,10 @@ typedef struct Node {
 } Node;
 
 // Prototype
-Node *term();
-Node *mul();
-Node *expr();
+Node *term(int pos);
+Node *mul(int pos);
+Node *expr(int pos);
+void tokenize(char *p);
 
 // tokenized result should be saved to this array.
 // We conveive num of tokens are below 100.
@@ -60,8 +61,6 @@ Node *new_node_num(int val) {  // the lowest node of AST
     node->val = val;
     return node;
 }
-
-
 
 // chars which are contained at *p will be divided and saved in tokens.
 void tokenize(char *p) {
@@ -107,13 +106,13 @@ void error(char *body, char *parameter) {
 // term: number | "(" expr ")"
 // This rule can be converted like below. And we use [None] as nothing.
 // term: number | (expr')
-Node *term() {
+Node *term(int pos) {
     if (tokens[pos].ty == TK_NUM) {
         return new_node_num(tokens[pos++].val);
     }
     if (tokens[pos].ty == '(') {
         pos++;
-        Node *node = expr(); // inside () parsed again as expr
+        Node *node = expr(pos); // inside () parsed again as expr
         if (tokens[pos].ty != ')'){  // if tokens don't include ')', raise error.
             error("[Fatal] couldn't parse ')': %s", tokens[pos].input);
         }
@@ -129,16 +128,16 @@ Node *term() {
 // mul: term mul'
 // mul': [None] | "*" term | "/" term
 // この生成規則に従うと、mulは、空の記号列か* termか/ termに展開されることになる。
-Node *mul() {
-    Node *lhs = term();  //生成規則上、termが優先されるため、とりあえずtermに投げ込む。
+Node *mul(int pos) {
+    Node *lhs = term(pos);  //生成規則上、termが優先されるため、とりあえずtermに投げ込む。
 
     if (tokens[pos].ty == '*') {
         pos++;
-        return new_node('*', lhs, mul());
+        return new_node('*', lhs, mul(pos));
     }
     if(tokens[pos].ty == '/') {
         pos++;
-        return new_node('/', lhs, mul());
+        return new_node('/', lhs, mul(pos));
     }
     return lhs;
 }
@@ -149,16 +148,16 @@ Node *mul() {
 // expr: mul expr'
 // expr': [None] | "+" expr | "-" expr
 // この生成規則に従うと、exprは、空の記号列か+ exprか- exprに展開されることになる。
-Node *expr() {
-    Node *lhs = mul();  // 優先的にパースされるべきmulやtermが先に展開された上でそれらを全て展開した結果が返ってくる。
+Node *expr(int pos) {
+    Node *lhs = mul(pos);  // 優先的にパースされるべきmulやtermが先に展開された上でそれらを全て展開した結果が返ってくる。
 
     if (tokens[pos].ty == '+') {
         pos++;
-        return new_node('+', lhs, expr());
+        return new_node('+', lhs, expr(pos));
     }
     if (tokens[pos].ty == '-') {
         pos++;
-        return new_node('-', lhs, expr());
+        return new_node('-', lhs, expr(pos));
     }
     return lhs;
 }
@@ -197,9 +196,11 @@ int main(int argc, char **argv) {
         return 1;
     }
 
+    int pos = 0;
+
     // do tokenize.
     tokenize(argv[1]);
-    Node* node = expr();
+    Node* node = expr(pos);
 
     // Output former half of assembly.
     printf(".intel_syntax noprefix\n");
