@@ -3,15 +3,22 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-// Set property for token types.
+// Set property for token type.
 enum {
     TK_NUM = 256, // INT token
+    TK_EOF,  // EOF token
+};
+
+// Set property for node types.
+enum {
+    ND_NUM = 256, // INT token
 };
 
 // token types
 typedef struct {
     int ty; // token type(maybe contains TK_NUM or TK_EOF.)
     int val; // if ty is TK_NUM then that int.
+    char *input; // token chars.
 } Token;
 
 // Node type.
@@ -23,6 +30,10 @@ typedef struct Node {
     int val;  // contains value of number.
 } Node;
 
+// tokenized result should be saved to this array.
+// We conveive num of tokens are below 100.
+Token tokens[100];
+
 // Make new node. (operator)
 // initialize node struct.
 // 1. Allocate memory.
@@ -30,26 +41,61 @@ typedef struct Node {
 Node *new_node(int op, Node *lhs, Node *rhs) {  // return value is pointer, so Node *<func name> is declared here.
     Node *node = malloc(sizeof(Node));
     // use arrow operator(->), when you want to access a member variable of pointer.
-    node->ty = op;
-    node->lhs = lhs;
-    node->rhs = rhs;
+    node->ty = op;  // lhs *op* rhs
+    node->lhs = lhs;  // *lhs* op rhs
+    node->rhs = rhs;  // lhs op *rhs*
 
-    return node;
+    return node;  // return node pointer.
 }
 
 // Make new node contained number.
-Node *new_node_num(int val) {
+Node *new_node_num(int val) {  // the lowest node of AST
     Node *node = malloc(sizeof(Node));
-    node->ty = ND_NUM;
+    node->ty = ND_NUM;  // type is num that is defined above.
     node->val = val;
     return node;
 }
 
+// load mul. mul is defined below.
+// mul: term | term "*" mul | term "/" mul
+// This rule can be converted like below. And we use [None] as nothing.
+// mul: term mul'
+// mul': [None] | "*" term | "/" term
+// この生成規則に従うと、mulは、空の記号列か* termか/ termに展開されることになる。
+Node *mul() {
+    Node *lhs = term();  //生成規則上、termが優先されるため、とりあえずtermに投げ込む。
 
+    if (tokens[pos].ty == '*') {
+        pos++;
+        return new_node('*', lhs, mul());
+    }
+    if(tokens[pos].ty == '/') {
+        pos++;
+        return new_node('/', lhs, mul());
+    }
+    return lhs;
+}
 
-// tokenized result should be saved to this array.
-// We conveive num of tokens are below 100.
-Token tokens[100]; // 構造体100個
+// load expr. expr is defined below.
+// expr: mul | mul "+" expr | mul "-" expr
+// This rule can be converted like below. And we use [None] as nothing.
+// expr: mul expr'
+// expr': [None] | "+" expr | "-" expr
+// この生成規則に従うと、exprは、空の記号列か+ exprか- exprに展開されることになる。
+Node *expr() {
+    Node *lhs = mul();  // 優先的にパースされるべきmulやtermが先に展開された上でそれらを全て展開した結果が返ってくる。
+
+    if (tokens[pos].ty == '+') {
+        pos++;
+        return new_node('+', lhs, expr());
+    }
+    if (tokens[pos].ty == '-') {
+        pos++;
+        return new_node('-', lhs, expr());
+    }
+    return lhs;
+}
+
 
 // chars which are contained at *p will be divided and saved in tokens.
 void tokenize(char *p) {
