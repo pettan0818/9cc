@@ -74,7 +74,8 @@ void tokenize(char *p) {
             continue;
         }
 
-        if (*p == '+' || *p == '-') {
+        // operator will parsed here
+        if (*p == '+' || *p == '-' || *p == '*' || *p == '/' || *p == '(' || *p == ')') {
             tokens[i].ty = *p;  // implies +- will be type.
             tokens[i].input = p;
             i++;
