@@ -6,6 +6,7 @@
 // Set property for token type.
 enum {
     TK_NUM = 256, // INT token
+    TK_IDENT,  // variable identification token.
     TK_EOF,  // EOF token
 };
 
@@ -83,11 +84,21 @@ void tokenize(char *p) {
             continue;
         }
 
+        // numbers.
         if (isdigit(*p)) {
             tokens[i].ty = TK_NUM;
             tokens[i].input = p;
             tokens[i].val = strtol(p, &p, 10);
             i++;
+            continue;
+        }
+
+        // Variables parse.
+        if ('a' <= *p && *p <= 'z') {  // string is a-z.
+            tokens[i].ty = TK_IDENT;
+            tokens[i].input = p;
+            i++;
+            p++;
             continue;
         }
 
